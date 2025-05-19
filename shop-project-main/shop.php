@@ -8,7 +8,7 @@ $loggedIn = isset($_SESSION['email']);
 // Set default category filter
 $categoryFilter = isset($_GET['category']) ? $_GET['category'] : 'all';
 
-// Fetch all products
+// Fetch all products with error handling
 $productsQuery = "SELECT * FROM products";
 if ($categoryFilter != 'all') {
     $categoryFilter = mysqli_real_escape_string($conn, $categoryFilter);
@@ -17,33 +17,49 @@ if ($categoryFilter != 'all') {
 $productsQuery .= " ORDER BY created_at DESC";
 $productsResult = mysqli_query($conn, $productsQuery);
 
-// Fetch all categories
+if (!$productsResult) {
+    die("Error fetching products: " . mysqli_error($conn));
+}
+
+// Fetch all categories with error handling
 $categoriesResult = mysqli_query($conn, "SELECT * FROM categories ORDER BY name ASC");
+if (!$categoriesResult) {
+    die("Error fetching categories: " . mysqli_error($conn));
+}
+
 $categories = [];
-if ($categoriesResult) {
-    while ($row = mysqli_fetch_assoc($categoriesResult)) {
-        $categories[] = $row;
-    }
+while ($row = mysqli_fetch_assoc($categoriesResult)) {
+    $categories[] = $row;
 }
 
 // Handle add to cart
 if (isset($_POST['add_to_cart']) && $loggedIn) {
-    $productId = $_POST['product_id'];
-    $userId = $_SESSION['user_id'];
+    $productId = (int)$_POST['product_id'];
+    $userId = (int)$_SESSION['user_id'];
     $quantity = 1;
     
     // Check if product already in cart
     $checkCartQuery = "SELECT * FROM cart WHERE user_id = $userId AND product_id = $productId";
     $checkCartResult = mysqli_query($conn, $checkCartQuery);
     
+    if (!$checkCartResult) {
+        die("Error checking cart: " . mysqli_error($conn));
+    }
+    
     if (mysqli_num_rows($checkCartResult) > 0) {
         // Update quantity
         $cartItem = mysqli_fetch_assoc($checkCartResult);
         $newQuantity = $cartItem['quantity'] + 1;
-        mysqli_query($conn, "UPDATE cart SET quantity = $newQuantity WHERE id = {$cartItem['id']}");
+        $updateQuery = "UPDATE cart SET quantity = $newQuantity WHERE id = {$cartItem['id']}";
+        if (!mysqli_query($conn, $updateQuery)) {
+            die("Error updating cart: " . mysqli_error($conn));
+        }
     } else {
         // Add new item to cart
-        mysqli_query($conn, "INSERT INTO cart (user_id, product_id, quantity) VALUES ($userId, $productId, $quantity)");
+        $insertQuery = "INSERT INTO cart (user_id, product_id, quantity) VALUES ($userId, $productId, $quantity)";
+        if (!mysqli_query($conn, $insertQuery)) {
+            die("Error adding to cart: " . mysqli_error($conn));
+        }
     }
     
     // Redirect to prevent form resubmission
@@ -60,7 +76,373 @@ if (isset($_POST['add_to_cart']) && $loggedIn) {
     <title>E-Shop - Products</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="e-shop.css">
+    <style>
+        :root {
+            --primary-color: #6c63ff;
+            --secondary-color: #f50057;
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --white: #ffffff;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Styles */
+        .header {
+            background: var(--white);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        .logo span {
+            color: var(--secondary-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--primary-color);
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-icon a {
+            color: var(--text-color);
+            font-size: 1.2rem;
+            position: relative;
+        }
+
+        .cart-icon .count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--secondary-color);
+            color: var(--white);
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+        }
+
+        /* Shop Section Styles */
+        .shop-section {
+            padding: 3rem 0;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+        }
+
+        .shop-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+        }
+
+        /* Sidebar Styles */
+        .shop-sidebar {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+
+        .sidebar-widget {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-widget h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .category-list {
+            list-style: none;
+        }
+
+        .category-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        .category-list a {
+            text-decoration: none;
+            color: var(--text-color);
+            display: block;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .category-list a:hover,
+        .category-list a.active {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        /* Product Grid Styles */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-img {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .product-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-tag {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--secondary-color);
+            color: var(--white);
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .product-details {
+            padding: 1.5rem;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-price {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .add-to-cart {
+            flex: 1;
+            background: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .add-to-cart:hover {
+            background: #5a52d5;
+        }
+
+        .wishlist-btn {
+            background: var(--white);
+            border: 1px solid #ddd;
+            padding: 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .wishlist-btn:hover {
+            color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        /* Cart Sidebar Styles */
+        .cart-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: var(--white);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            transition: right 0.3s;
+            z-index: 1001;
+        }
+
+        .cart-sidebar.active {
+            right: 0;
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .close-cart {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .cart-items {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-item-img {
+            width: 80px;
+            height: 80px;
+        }
+
+        .cart-item-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .cart-item-details {
+            flex: 1;
+        }
+
+        .cart-item-title {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .cart-item-price {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .cart-item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .qty-btn {
+            background: var(--light-bg);
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .remove-item {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .shop-container {
+                grid-template-columns: 1fr;
+            }
+
+            .shop-sidebar {
+                margin-bottom: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            .cart-sidebar {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -86,8 +468,12 @@ if (isset($_POST['add_to_cart']) && $loggedIn) {
                             if ($loggedIn) {
                                 $userId = $_SESSION['user_id'];
                                 $cartCountQuery = mysqli_query($conn, "SELECT SUM(quantity) as total FROM cart WHERE user_id = $userId");
-                                $cartCount = mysqli_fetch_assoc($cartCountQuery)['total'];
-                                echo "<span class='count'>$cartCount</span>";
+                                if ($cartCountQuery) {
+                                    $cartCount = mysqli_fetch_assoc($cartCountQuery)['total'] ?? 0;
+                                    echo "<span class='count'>$cartCount</span>";
+                                } else {
+                                    echo "<span class='count'>0</span>";
+                                }
                             } else {
                                 echo "<span class='count'>0</span>";
                             }
@@ -131,9 +517,9 @@ if (isset($_POST['add_to_cart']) && $loggedIn) {
                             </li>
                             <?php foreach ($categories as $category): ?>
                             <li>
-                                <a href="shop.php?category=<?php echo $category['name']; ?>" 
+                                <a href="shop.php?category=<?php echo htmlspecialchars($category['name']); ?>" 
                                    class="<?php echo $categoryFilter == $category['name'] ? 'active' : ''; ?>">
-                                    <?php echo $category['name']; ?>
+                                    <?php echo htmlspecialchars($category['name']); ?>
                                 </a>
                             </li>
                             <?php endforeach; ?>
@@ -159,23 +545,30 @@ if (isset($_POST['add_to_cart']) && $loggedIn) {
                         <?php while ($product = mysqli_fetch_assoc($productsResult)): ?>
                             <div class="product-card">
                                 <div class="product-img">
-                                    <img src="<?php echo $product['image']; ?>" alt="<?php echo $product['name']; ?>">
+                                    <img src="<?php echo htmlspecialchars($product['image']); ?>" 
+                                         alt="<?php echo htmlspecialchars($product['name']); ?>">
                                     <?php if ($product['featured']): ?>
                                         <div class="product-tag featured-tag">Featured</div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="product-details">
-                                    <h3 class="product-title"><?php echo $product['name']; ?></h3>
+                                    <h3 class="product-title"><?php echo htmlspecialchars($product['name']); ?></h3>
                                     <div class="product-price">
-                                        <span class="current-price">$<?php echo $product['price']; ?></span>
+                                        <span class="current-price">$<?php echo number_format($product['price'], 2); ?></span>
                                     </div>
                                     <div class="product-actions">
-                                        <form method="post" action="">
-                                            <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
-                                            <button type="submit" name="add_to_cart" class="add-to-cart">
-                                                <i class="fas fa-shopping-cart"></i> Add to Cart
-                                            </button>
-                                        </form>
+                                        <?php if ($loggedIn): ?>
+                                            <form method="post" action="">
+                                                <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                                                <button type="submit" name="add_to_cart" class="add-to-cart">
+                                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <a href="index.php" class="add-to-cart">
+                                                <i class="fas fa-sign-in-alt"></i> Login to Buy
+                                            </a>
+                                        <?php endif; ?>
                                         <button class="wishlist-btn">
                                             <i class="far fa-heart"></i>
                                         </button>
