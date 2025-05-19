@@ -164,6 +164,11 @@ if($row = mysqli_fetch_array($query)) {
                 <h3>Product Search</h3>
                 <p>Find products by name or category</p>
             </a>
+            <a href="about-us.php" class="dashboard-card">
+                <i class="fas fa-info-circle"></i>
+                <h3>About Us</h3>
+                <p>Learn more about our company</p>
+            </a>
         </div>
     </div>
 </body>
