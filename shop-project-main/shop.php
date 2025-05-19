@@ -450,13 +450,13 @@ if (isset($_POST['add_to_cart']) && $loggedIn) {
         <div class="container">
             <nav class="navbar">
                 <div class="logo">
-                    <h1>E-<span>Shop</span></h1>
+                    <a href="homepage.php" style="text-decoration:none;"><h1><span style="color:#6c63ff;">E</span><span style="color:#f50057;">-Shop</span></h1></a>
                 </div>
                 
                 <ul class="nav-links">
                     <li><a href="homepage.php">Home</a></li>
                     <li><a href="shop.php" class="active">Shop</a></li>
-                    <li><a href="about.php">About</a></li>
+                    <li><a href="about-us.php">About</a></li>
                     <li><a href="contact.php">Contact</a></li>
                 </ul>
                 
