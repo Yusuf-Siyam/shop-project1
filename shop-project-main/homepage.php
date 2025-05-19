@@ -120,6 +120,30 @@ if($row = mysqli_fetch_array($query)) {
     </style>
 </head>
 <body>
+    <!-- Top Navigation Bar -->
+    <nav style="background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.5rem 0;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 32px;">
+            <a href="homepage.php" style="font-size: 2rem; font-weight: bold; color: #6c63ff; text-decoration: none; letter-spacing: 1px;">
+                <span style="color: #6c63ff;">E</span><span style="color: #f50057;">-Shop</span>
+            </a>
+            <div style="display: flex; align-items: center; gap: 2.5rem;">
+                <a href="homepage.php" style="color: #222; text-decoration: none; font-weight: 500; font-size: 1.1rem;">Home</a>
+                <a href="shop.php" style="color: #6c63ff; text-decoration: none; font-weight: 500; font-size: 1.1rem;">Shop</a>
+                <a href="about-us.php" style="color: #222; text-decoration: none; font-weight: 500; font-size: 1.1rem;">About</a>
+                <a href="contact.php" style="color: #222; text-decoration: none; font-weight: 500; font-size: 1.1rem;">Contact</a>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <a href="checkout.php" style="position: relative; color: #222; text-decoration: none; font-size: 1.5rem;">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span style="position: absolute; top: -10px; right: -12px; background: #f50057; color: #fff; border-radius: 50%; padding: 2px 7px; font-size: 0.9rem; font-weight: bold;">2</span>
+                </a>
+                <a href="view-order.php" style="color: #222; text-decoration: none; font-size: 1.5rem;">
+                    <i class="fas fa-user"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- End Top Navigation Bar -->
     <div class="dashboard-container">
         <div class="dashboard-header">
             <div class="user-info">
