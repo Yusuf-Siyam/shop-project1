@@ -118,6 +118,7 @@ $itemsResult = mysqli_query($conn, $itemsQuery);
 
         .info-group p {
             color: #666;
+            margin-bottom: 0.5rem;
         }
 
         .order-items {
@@ -258,6 +259,89 @@ $itemsResult = mysqli_query($conn, $itemsQuery);
             color: #721c24;
         }
 
+        .shipping-info {
+            background: var(--light-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+
+        .shipping-info h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .shipping-info p {
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .tracking-info {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            border: 1px solid #eee;
+        }
+
+        .tracking-info h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .tracking-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+            position: relative;
+        }
+
+        .tracking-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #eee;
+            z-index: 1;
+        }
+
+        .tracking-step {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--white);
+            border: 2px solid #eee;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            color: #666;
+        }
+
+        .step-icon.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .step-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .step-label.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
         @media (max-width: 768px) {
             .order-info {
                 grid-template-columns: 1fr;
@@ -279,6 +363,15 @@ $itemsResult = mysqli_query($conn, $itemsQuery);
             .btn {
                 width: 100%;
                 text-align: center;
+            }
+
+            .tracking-steps {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .tracking-steps::before {
+                display: none;
             }
         }
     </style>
@@ -340,6 +433,44 @@ $itemsResult = mysqli_query($conn, $itemsQuery);
                 <div class="summary-row total">
                     <span>Total:</span>
                     <span>$<?php echo number_format($order['total_amount'], 2); ?></span>
+                </div>
+            </div>
+
+            <div class="shipping-info">
+                <h3>Shipping Information</h3>
+                <p><strong>Address:</strong> <?php echo htmlspecialchars($order['shipping_address']); ?></p>
+                <p><strong>City:</strong> <?php echo htmlspecialchars($order['shipping_city']); ?></p>
+                <p><strong>Postal Code:</strong> <?php echo htmlspecialchars($order['shipping_postal_code']); ?></p>
+                <p><strong>Phone:</strong> <?php echo htmlspecialchars($order['shipping_phone']); ?></p>
+            </div>
+
+            <div class="tracking-info">
+                <h3>Order Tracking</h3>
+                <div class="tracking-steps">
+                    <div class="tracking-step">
+                        <div class="step-icon active">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="step-label active">Order Placed</div>
+                    </div>
+                    <div class="tracking-step">
+                        <div class="step-icon <?php echo in_array($order['status'], ['processing', 'shipped', 'delivered']) ? 'active' : ''; ?>">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="step-label <?php echo in_array($order['status'], ['processing', 'shipped', 'delivered']) ? 'active' : ''; ?>">Processing</div>
+                    </div>
+                    <div class="tracking-step">
+                        <div class="step-icon <?php echo in_array($order['status'], ['shipped', 'delivered']) ? 'active' : ''; ?>">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="step-label <?php echo in_array($order['status'], ['shipped', 'delivered']) ? 'active' : ''; ?>">Shipped</div>
+                    </div>
+                    <div class="tracking-step">
+                        <div class="step-icon <?php echo $order['status'] == 'delivered' ? 'active' : ''; ?>">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="step-label <?php echo $order['status'] == 'delivered' ? 'active' : ''; ?>">Delivered</div>
+                    </div>
                 </div>
             </div>
 
